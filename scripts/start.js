@@ -96,7 +96,7 @@ checkBrowsers(paths.appPath, isInteractive)
       config,
       urls,
       useYarn,
-      useTypeScript,
+      // useTypeScript,
       webpack,
     });
     // Load proxy config
