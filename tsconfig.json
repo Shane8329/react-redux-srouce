@@ -6,7 +6,7 @@
         "src/*"
       ],
       "react-redux": [
-        "src/es"
+        "src/react-redux-8.0.2/src"
       ],
     },
     "target": "es5",
