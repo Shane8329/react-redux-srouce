@@ -116,6 +116,9 @@ function subscribeUpdates(
   let didUnsubscribe = false
   let lastThrownError: Error | null = null
 
+  /**
+   * 组件实际的更新是checkForUpdates完成的
+   */
   // We'll run this callback every time a store subscription update propagates to this component
   const checkForUpdates = () => {
     if (didUnsubscribe || !isMounted.current) {
@@ -527,9 +530,13 @@ function connect<
           return [props.context, reactReduxForwardedRef, wrapperProps]
         }, [props])
 
+        /**
+         * 这一步确定context 可以使用户传入的或者全局的React.createContext
+         */
       const ContextToUse: ReactReduxContextInstance = useMemo(() => {
         // Users may optionally pass in a custom context instance to use instead of our ReactReduxContext.
         // Memoize the check that determines which context instance we should use.
+
         return propsContext &&
           propsContext.Consumer &&
           // @ts-ignore
@@ -563,7 +570,9 @@ function connect<
             `React context consumer to ${displayName} in connect options.`
         )
       }
-
+      /**
+       * 获取store
+       */
       // Based on the previous check, one of these must be true
       const store: Store = didStoreComeFromProps
         ? props.store!
