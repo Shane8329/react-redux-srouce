@@ -1,4 +1,4 @@
-import React, { Context, ReactNode, useMemo } from 'react'
+import React, { Context, ReactNode, useEffect, useMemo } from 'react'
 import { ReactReduxContext, ReactReduxContextValue } from './Context'
 import { createSubscription } from '../utils/Subscription'
 import { useIsomorphicLayoutEffect } from '../utils/useIsomorphicLayoutEffect'
@@ -30,6 +30,7 @@ function Provider<A extends Action = AnyAction>({
   children,
   serverState,
 }: ProviderProps<A>) {
+  // 生成了一个用于context透传的对象，包含redux store、subscription实例、SSR时可能用到的函数
   const contextValue = useMemo(() => {
     //创建订阅实例 后续嵌套收集订阅的关键
     const subscription = createSubscription(store)
@@ -40,8 +41,7 @@ function Provider<A extends Action = AnyAction>({
     }
   }, [store, serverState])
 
-  // 获取了一次最新 state 并命名为 previousState，只要 store 单例不发生变化，它是不会更新的。
-  //一般项目中也不太会改变 redux 单例。
+  // 获取一次当前的redux state，因为后续子节点的渲染可能会修改state，所以它叫previousState
   const previousState = useMemo(() => store.getState(), [store])
 
   // 这里做了一个同构：在 server 环境时使用 useEffect，在浏览器环境时使用 useLayoutEffect
@@ -49,20 +49,27 @@ function Provider<A extends Action = AnyAction>({
   //所以再最后读取一次 state，比较一下是否要通知它们更新。
   useIsomorphicLayoutEffect(() => {
     const { subscription } = contextValue
+    // 设置subscription的onStateChange方法
     subscription.onStateChange = subscription.notifyNestedSubs
+    // 将subscription的更新回调订阅给父级，这里会订阅给redux
     subscription.trySubscribe()
 
+    // 判断state经过渲染后是否变化，如果变化则触发所有子订阅更新
     if (previousState !== store.getState()) {
       subscription.notifyNestedSubs()
     }
+    
+    
+    // 组件卸载时的注销操作
     return () => {
       subscription.tryUnsubscribe()
       subscription.onStateChange = undefined
     }
-  }, [contextValue, previousState])
+  }, [contextValue, previousState])  
 
   const Context = context || ReactReduxContext
 
+  // 最终Provider组件只是为了将contextValue透传下去，组件UI完全使用children
   // @ts-ignore 'AnyAction' is assignable to the constraint of type 'A', but 'A' could be instantiated with a different subtype
   return <Context.Provider value={contextValue}>{children}</Context.Provider>
 }

@@ -431,6 +431,12 @@ let hasWarnedAboutDeprecatedPureOption = false
  * @param options Options for configuring the connection
  *
  */
+/**
+ * connect做了几件事情:
+ * 1.向父级订阅自己的更新、
+ * 2.从 redux store select 数据
+ * 3.判断是否需要更新等其他细节
+ */
 function connect<
   TStateProps = {},
   TDispatchProps = {},
@@ -457,6 +463,7 @@ function connect<
     context = ReactReduxContext,
   }: ConnectOptions<unknown, unknown, unknown, unknown> = {}
 ): unknown {
+  //过期api告警
   if (process.env.NODE_ENV !== 'production') {
     if (pure !== undefined && !hasWarnedAboutDeprecatedPureOption) {
       hasWarnedAboutDeprecatedPureOption = true
@@ -470,6 +477,7 @@ function connect<
 
   type WrappedComponentProps = TOwnProps & ConnectProps
 
+  //通过工厂函数生成三个高阶函数，这些函数返回的是selector的值
   const initMapStateToProps = mapStateToPropsFactory(mapStateToProps)
   const initMapDispatchToProps = mapDispatchToPropsFactory(mapDispatchToProps)
   const initMergeProps = mergePropsFactory(mergeProps)
@@ -582,12 +590,14 @@ function connect<
         ? contextValue.getServerState
         : store.getState
 
+      //此处useMemo定义的是返回最终真正需要值的函数（高阶函数的终点）
       const childPropsSelector = useMemo(() => {
         // The child props selector needs the store reference as an input.
         // Re-create this selector whenever the store changes.
         return defaultSelectorFactory(store.dispatch, selectorFactoryOptions)
       }, [store])
 
+      //订阅相关
       const [subscription, notifyNestedSubs] = useMemo(() => {
         if (!shouldHandleStateChanges) return NO_SUBSCRIPTION_ARRAY
 
@@ -617,7 +627,6 @@ function connect<
           // the existing context value is from the nearest connected ancestor.
           return contextValue!
         }
-
         // Otherwise, put this component's subscription instance into context, so that
         // connected descendants won't update until after this component is done
         return {
@@ -627,12 +636,20 @@ function connect<
       }, [didStoreComeFromProps, contextValue, subscription])
 
       // Set up refs to coordinate values between the subscription effect and the render logic
+      // 这里定义了一批『持久化数据』（不会随着组件重复执行而初始化）
+      //，这些数据主要为了将来的『更新判断』和『由父组件带动的更新、来自 store 的更新不重复发生』，后面会用到它们。
+      //该变量保存上一次渲染时传递给子组件的 props。当组件重新渲染时，可以将当前的 props 与上一次保留的 props 进行比较，以确定是否需要更新子组件。
       const lastChildProps = useRef<unknown>()
+      //该变量保存上一次渲染时传递给高阶组件的 props。同样，当组件重新渲染时，可以将当前的 props 与上一次保留的 props 进行比较，以确定是否需要重新包装组件进行渲染。
       const lastWrapperProps = useRef(wrapperProps)
-      const childPropsFromStoreUpdate = useRef<unknown>()
+      //该变量保存从 Redux Store 更新产生的子组件 props。该变量可用于判断是否需要更新子组件
+      const childPropsFromStoreUpdate = useRef<unknown>() 
+      //该变量标识当前是否已安排了组件的重新渲染。如果为 true，则表示已经安排了重新渲染，否则需要安排重新渲染。
       const renderIsScheduled = useRef(false)
       const isProcessingDispatch = useRef(false)
+      //该变量标识组件是否已经挂载。如果为 true，则表示组件已经挂载，否则表示组件尚未挂载。
       const isMounted = useRef(false)
+
 
       const latestSubscriptionCallbackError = useRef<Error>()
 
@@ -670,13 +687,13 @@ function connect<
       // We need this to execute synchronously every time we re-render. However, React warns
       // about useLayoutEffect in SSR, so we try to detect environment and fall back to
       // just useEffect instead to avoid the warning, since neither will run anyway.
-
+      // 这里订阅了更新，并且返回一个注销订阅的函数
       const subscribeForReact = useMemo(() => {
         const subscribe = (reactListener: () => void) => {
           if (!subscription) {
             return () => {}
           }
-
+          //此函数是发起更新的入口
           return subscribeUpdates(
             shouldHandleStateChanges,
             store,

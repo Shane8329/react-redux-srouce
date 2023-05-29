@@ -65,6 +65,11 @@ export function getDependsOnOwnProps(mapToProps: MapToProps) {
 //  * On first call, verifies the first result is a plain object, in order to warn
 //    the developer that their mapToProps function is not returning a valid result.
 //
+/**
+ * 将mapToProps 包装在一个代理函数中
+ * 在第一次调用时，如果mapToProps返回另一个函数，则处理 mapToProps，并处理把新函数作为后续调用的真正 mapToProps。
+ * 在第一次调用时，验证结果是否为一个平层的对象，以警告开发人员的 mapToProps 函数未返回有效结果。
+ */
 export function wrapMapToPropsFunc<P extends AnyProps = AnyProps>(
   mapToProps: MapToProps,
   methodName: string
@@ -93,12 +98,13 @@ export function wrapMapToPropsFunc<P extends AnyProps = AnyProps>(
       proxy.dependsOnOwnProps = getDependsOnOwnProps(mapToProps)
       let props = proxy(stateOrDispatch, ownProps)
 
+      //第一次调用时，如果mapToProps返回另一个函数，则处理 mapToProps，并处理把新函数作为后续调用的真正 mapToProps。
       if (typeof props === 'function') {
         proxy.mapToProps = props
         proxy.dependsOnOwnProps = getDependsOnOwnProps(props)
         props = proxy(stateOrDispatch, ownProps)
       }
-
+      //验证结果是否为一个平层的对象，以警告开发人员的 mapToProps 函数未返回有效结果。
       if (process.env.NODE_ENV !== 'production')
         verifyPlainObject(props, displayName, methodName)
 

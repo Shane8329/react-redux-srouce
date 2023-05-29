@@ -6,12 +6,15 @@ import reportWebVitals from "./reportWebVitals";
 import { Provider } from "react-redux";
 import TodoApp from "./TodoApp";
 import store from "./redux/store";
+import UseSyncExternalStoreDemo from "./react-redux-8.0.2/src/components/useSyncExternal";
 
 const root = ReactDOM.createRoot(document.getElementById("root"));
 root.render(
   <Provider store={store}>
     <TodoApp />
   </Provider>
+      // <UseSyncExternalStoreDemo/>
+
 );
 
 // If you want to start measuring performance in your app, pass a function
