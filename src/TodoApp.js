@@ -5,12 +5,13 @@ import VisibilityFilters from "./components/VisibilityFilters";
 import "./styles.css";
 
 export default function TodoApp() {
+  const A = TodoList
   return (
-    <div className="todo-app">
+    <div style={{width:"800px",margin:"120px auto"}}>
       <h1>Todo List</h1>
       <AddTodo currentCompName='AddTodo' />
-      <TodoList currentCompName='TodoList'/>
       <VisibilityFilters currentCompName='VisibilityFilters' />
+      <TodoList currentCompName='TodoList'/>
     </div>
   );
 }

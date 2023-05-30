@@ -17,8 +17,12 @@ const Todo = ({ todo, toggleTodo }) => (
   </li>
 );
 
+const mapStateToProps = (state) => {
+  const { test } = state;
+  return { test };
+};
 // export default Todo;
 export default connect(
-  null,
+  mapStateToProps,
   { toggleTodo }
 )(Todo);

@@ -66,6 +66,10 @@ function Provider<A extends Action = AnyAction>({
       subscription.onStateChange = undefined
     }
   }, [contextValue, previousState])  
+  
+  useEffect(() => {
+    console.log('Provider收集的订阅',contextValue.subscription.getListeners().get());
+  },[])
 
   const Context = context || ReactReduxContext
 

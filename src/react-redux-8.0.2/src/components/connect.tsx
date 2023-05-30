@@ -1,6 +1,6 @@
 /* eslint-disable valid-jsdoc, @typescript-eslint/no-unused-vars */
 import hoistStatics from 'hoist-non-react-statics'
-import React, { useContext, useMemo, useRef } from 'react'
+import React, { useContext, useEffect, useMemo, useRef } from 'react'
 import { isValidElementType, isContextConsumer } from 'react-is'
 
 import type { Store } from 'redux'
@@ -170,10 +170,13 @@ function subscribeUpdates(
   // Actually subscribe to the nearest connected ancestor (or store)
   subscription.onStateChange = checkForUpdates
   subscription.trySubscribe()
+  // console.log('被收集',lastWrapperProps.current?.currentCompName);
+  
 
   // Pull data from the store after first render in case the store has
   // changed since we began.
   checkForUpdates()
+  
 
   const unsubscribeWrapper = () => {
     didUnsubscribe = true
@@ -722,6 +725,9 @@ function connect<
         notifyNestedSubs,
       ])
 
+      useEffect(() => {
+        console.log(`${displayName}收集的订阅：`, subscription?.getListeners().get());
+      })
       let actualChildProps: unknown
 
       try {
